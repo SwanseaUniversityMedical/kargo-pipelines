@@ -32,10 +32,15 @@ spec:
         kargo.akuity.io/project: "true"
   source:
 
-    # For testing, deploy off pinned harbor chart for actual projects
-    repoURL: https://github.com/SwanseaUniversityMedical/kargo-pipelines.git
-    path: charts/kargo-pipelines
-    targetRevision: HEAD
+    # For testing
+    #repoURL: https://github.com/SwanseaUniversityMedical/kargo-pipelines.git
+    #path: charts/kargo-pipelines
+    #targetRevision: HEAD
+
+    # For actual usage
+    repoURL: harbor.ukserp.ac.uk/kargo-pipelines/chart
+    chart: kargo-pipelines
+    targetRevision: 1.0.0
 
     helm:
       valuesObject:
@@ -43,7 +48,6 @@ spec:
         # A list of stages to spawn and their dependencies
         stages:
           - name: "dev-0"
-            enabled: true
           - name: "dev-1"
             enabled: false
           - name: "uat"
