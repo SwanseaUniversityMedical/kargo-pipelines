@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # This is an extra config map only deployed in the dev-0 deployment
+  name: example-extra-configmap
+data:
+  foo: "bar"

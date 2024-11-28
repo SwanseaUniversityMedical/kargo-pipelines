@@ -1,0 +1,7 @@
+# TODO find a way to automate this patch
+- op: replace
+  path: /spec/destination/namespace
+  value: kargo-demo-uat
+- op: replace
+  path: /spec/project
+  value: kargo-demo-uat

@@ -1,0 +1,100 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.argocd.namespace }}
+
+  annotations:
+    kargo-pipelines.ukserp.ac.uk/component: argo-project
+    {{- with .Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.argocd.project.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  labels:
+    argocd.argoproj.io/rootproject: "true"
+    component: argo-project
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+    heritage: {{ .Release.Service }}
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.argocd.project.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  sourceRepos:
+  - '*'
+  sourceNamespaces:
+  - '*'
+  destinations:
+  - namespace: {{ .Values.argocd.namespace }}
+    server: https://kubernetes.default.svc
+  - namespace: {{ .Release.Name }}
+    server: https://kubernetes.default.svc
+  - namespace: "{{ .Release.Name }}-*"
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+
+# Generate an isolated argo project for each stage
+{{ range $stage := .Values.stages }}
+# Only output an argo project for this stage if the stage is enabled
+{{- if or (not (hasKey $stage "enabled")) $stage.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ $.Release.Name }}-{{ $stage.name }}
+  namespace: {{ $.Values.argocd.namespace }}
+
+  annotations:
+    kargo-pipelines.ukserp.ac.uk/component: argo-stage-project
+    {{- with $.Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $.Values.argocd.project.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  labels:
+    argocd.argoproj.io/rootproject: "true"
+    component: argo-stage-project
+    app: {{ $.Chart.Name }}
+    release: {{ $.Release.Name }}
+    chart: {{ printf "%s-%s" $.Chart.Name $.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+    heritage: {{ $.Release.Service }}
+    {{- with $.Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $.Values.argocd.project.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  sourceRepos:
+  - '*'
+  sourceNamespaces:
+  - '*'
+  destinations:
+  - namespace: {{ $.Values.argocd.namespace }}
+    server: https://kubernetes.default.svc
+  - namespace: "{{ $.Release.Name }}-{{ $stage.name }}"
+    server: https://kubernetes.default.svc
+  - namespace: "{{ $.Release.Name }}-{{ $stage.name }}-*"
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+{{- end }}
+{{ end }}

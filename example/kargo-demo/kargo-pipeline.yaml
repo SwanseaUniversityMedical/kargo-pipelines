@@ -1,0 +1,84 @@
+# This application deploys the entire multi-stage stack of stacks...
+# This example will deploy a namespace kargo-demo containing all the
+# kargo and argo components needed to manage all the environments.
+#
+# For each stage requested an argo app kargo-demo-{{stage}} will be created.
+# These apps will deploy into their own namespaces allowing them to be torn
+# down independently.
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-demo
+  namespace: argocd
+
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Put child apps in argo project for stage
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    # Deploy to the stage namespace
+    namespace: kargo-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        kargo.akuity.io/project: "true"
+  source:
+
+    # For testing, deploy off pinned harbor chart for actual projects
+    repoURL: https://github.com/SwanseaUniversityMedical/kargo-pipelines.git
+    path: charts/kargo-pipelines
+    targetRevision: HEAD
+
+    helm:
+      valuesObject:
+
+        # A list of stages to spawn and their dependencies
+        stages:
+          - name: "dev-0"
+            enabled: true
+          - name: "dev-1"
+            enabled: false
+          - name: "uat"
+            enabled: false
+            freightFrom:
+              - "dev-0"
+              - "dev-1"
+
+        warehouse:
+          # Values freight is the commit on the main branch of the deployment repo which we want to deploy
+          valuesFreight:
+            repoURL: https://github.com/SwanseaUniversityMedical/kargo-pipelines.git
+            discoveryLimit: 10
+            # Path within the main branch of the repo to the kustomize project for this set of deployments
+            path: example/kargo-demo
+
+          # Auxiliary freight are the image tags, chart versions, and git commits we want to expose for
+          # kargo to track and update.
+          freight:
+            # Track a container image
+            - image:
+                repoURL: harbor.ukserp.ac.uk/dlm/airflow/dags
+                discoveryLimit: 10
+            # Track a chart version
+            - chart:
+                repoURL: https://airflow.apache.org
+                name: airflow
+                discoveryLimit: 10
+
+          # Define how to patch manifests before kustomization
+          updateTemplates:
+            - name: patch-airflow
+              path: base/manifests/airflow.yaml
+              updates:
+                - key: spec.source.helm.valuesObject.images.airflow.tag
+                  value: ${{ imageFrom("harbor.ukserp.ac.uk/dlm/airflow/dags").Tag }}
+                - key: spec.source.targetRevision
+                  value: ${{ chartFrom("https://airflow.apache.org", "airflow").Version }}

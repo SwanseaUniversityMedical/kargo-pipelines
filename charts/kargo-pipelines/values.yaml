@@ -1,0 +1,76 @@
+
+# Global annotations and labels applied to all manifests
+annotations: {}
+labels: {}
+
+# A list of strings that will be templated and then exported as individual manifests
+extraManifests: []
+
+namespace:
+  # Global annotations and labels applied to the stage namespaces
+  annotations: {}
+  labels: {}
+
+argocd:
+  # The top level argocd namespace to deploy the argo project and appset
+  namespace: argocd
+
+  project:
+    # Annotations and labels applied to the project
+    annotations: {}
+    labels: {}
+
+  app:
+    # Annotations and labels applied to the apps
+    annotations: {}
+    labels: {}
+
+# A list of stages to spawn and their dependencies
+stages: []
+#  - name: "dev-0"
+#    labels:
+#      example: label
+#    annotations:
+#      example: annotation
+#  - name: "dev-1"
+#    enabled: false
+#  - name: "uat"
+#    freightFrom:
+#      - "dev-0"
+#      - "dev-1"
+
+warehouse:
+
+  # Annotations and labels applied to the warehouse
+  annotations: {}
+  labels: {}
+
+  # Values freight is the commit on the main branch of the deployment repo which we want to deploy
+  valuesFreight:
+    repoURL: https://github.com/example/kargo-demo.git
+    discoveryLimit: 10
+    # Path within the main branch of the repo to the kustomize project for this set of deployments
+    path: kargo-demo
+
+  # Auxiliary freight are the image tags, chart versions, and git commits we want to expose for
+  # kargo to track and update.
+  freight: []
+#    # Track a container image
+#    - image:
+#        repoURL: apache/airflow
+#        discoveryLimit: 10
+#    # Track a chart version
+#    - chart:
+#        repoURL: https://airflow.apache.org
+#        name: airflow
+#        discoveryLimit: 10
+
+  # Define how to patch manifests before kustomization
+  updateTemplates: []
+#    - name: patch-airflow
+#      path: base/manifests/airflow.yaml
+#      updates:
+#        - key: spec.source.helm.valuesObject.images.airflow.tag
+#          value: ${{ imageFrom("apache/airflow").tag }}
+#        - key: spec.source.targetRevision
+#          value: ${{ chartFrom("https://airflow.apache.org", "airflow").version }}

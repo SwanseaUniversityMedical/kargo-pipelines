@@ -1,0 +1,34 @@
+# Generate an isolated namespace for each stage
+# We make namespaces explicitly so that they can be deleted wholesale
+{{ range $stage := .Values.stages }}
+# Only output a namespace for this stage if the stage is enabled
+{{- if or (not (hasKey $stage "enabled")) $stage.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $.Release.Namespace }}-{{ $stage.name }}
+
+  annotations:
+    kargo-pipelines.ukserp.ac.uk/component: namespace
+    {{- with $.Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $.Values.namespace.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  labels:
+    component: namespace
+    app: {{ $.Chart.Name }}
+    release: {{ $.Release.Name }}
+    chart: {{ printf "%s-%s" $.Chart.Name $.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+    heritage: {{ $.Release.Service }}
+    {{- with $.Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $.Values.namespace.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+{{ end }}
