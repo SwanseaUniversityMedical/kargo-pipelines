@@ -1,0 +1,107 @@
+{{ range $stage := .Values.stages }}
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: {{ $stage.name }}
+  namespace: {{ $.Release.Namespace }}
+
+  annotations:
+    kargo-pipelines.ukserp.ac.uk/component: kargo-stage
+    {{- with $.Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $stage.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  labels:
+    component: kargo-stage
+    app: {{ $.Chart.Name }}
+    release: {{ $.Release.Name }}
+    chart: {{ printf "%s-%s" $.Chart.Name $.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+    heritage: {{ $.Release.Service }}
+    {{- with $.Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $stage.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: {{ $.Release.Name }}
+    sources:
+      {{- with $stage.freightFrom }}
+      stages: {{ . | toJson }}
+      {{- else }}
+      direct: true
+      {{- end }}
+
+  promotionTemplate:
+    spec:
+      steps:
+
+        # Clone the sources for this stage, and prepare the deployment branch
+        - uses: git-clone
+          config:
+            repoURL: {{ $.Values.warehouse.valuesFreight.repoURL }}
+            checkout:
+              # Checkout the git commit from main referenced in this stages freight
+              # as the source directory
+              - fromFreight: true
+                fromOrigin:
+                  kind: Warehouse
+                  name: {{ $.Release.Name }}
+                path: ./src
+
+              # Checkout the HEAD commit of the deployment branch for this stage
+              # as the output directory
+              - branch: deployment/{{ $.Release.Name }}-{{ $stage.name }}
+                create: true
+                path: ./out
+
+        # Clear the deployment branch so the only files on it are live manifests
+        - uses: git-clear
+          config:
+            path: ./out
+
+        # Fish into source manifests and update the image tags to match the freight
+        {{- range $.Values.warehouse.updateTemplates }}
+        - uses: yaml-update
+          as: {{ .name }}
+          config:
+            # Patch directly into the helm values contained within the airflow.yaml app manifest
+            path: ./src/{{ $.Values.warehouse.valuesFreight.path }}/{{ .path }}
+            updates:
+              {{- range .updates }}
+              - key: {{ .key }}
+                value: {{ .value }}
+              {{- end }}
+        {{ end }}
+        # Execute the kustomize for this stages deployment and output it into the
+        # empty deployment branch for this stage
+        - uses: kustomize-build
+          config:
+            path: ./src/{{ $.Values.warehouse.valuesFreight.path }}/deployments/{{ $stage.name }}
+            outPath: ./out
+
+        # Commit the final state of the output directory to the deployment branch
+        - uses: git-commit
+          as: commit
+          config:
+            path: ./out
+            messageFromSteps:
+              - patch-applications
+              {{- range $.Values.warehouse.updateTemplates }}
+              - {{ .name }}
+              {{- end }}
+
+        # Push the git commit to the deployment branch
+        - uses: git-push
+          config:
+            path: ./out
+            targetBranch: deployment/{{ $.Release.Name }}-{{ $stage.name }}
+{{ end }}

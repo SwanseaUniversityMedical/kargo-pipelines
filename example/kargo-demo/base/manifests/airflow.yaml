@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: airflow
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Put child apps in argo project for stage
+  project: PLACEHOLDER
+  destination:
+    server: https://kubernetes.default.svc
+    # Deploy to the stage namespace
+    namespace: PLACEHOLDER
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=false
+  source:
+    repoURL: 'https://airflow.apache.org'
+    chart: airflow
+    targetRevision: PLACEHOLDER
+
+    helm:
+      # Use valuesObject so that we can fish into it with kargo and patch the freight
+      # values, and also apply kustomize patches to the values (ingress urls, ect)
+      valuesObject:
+
+        executor: KubernetesExecutor
+
+        images:
+          airflow:
+            repository: harbor.ukserp.ac.uk/dlm/airflow/dags
+            tag: PLACEHOLDER
+            pullPolicy: Always
+
+        config:
+          core:
+            load_examples: "True"
+
+        createUserJob:
+          useHelmHooks: false
+          applyCustomEnv: false
+
+        migrateDatabaseJob:
+          useHelmHooks: false
+          applyCustomEnv: false
+
+        webserver:
+          enabled: true
+          startupProbe:
+            timeoutSeconds: 30
+            failureThreshold: 20
+            periodSeconds: 30
+
+        triggerer:
+          enabled: true
+
+        postgresql:
+          enabled: true
+
+        pgbouncer:
+          enabled: true
+          maxClientConn: 1000
+          metadataPoolSize: 100
+          resultBackendPoolSize: 50
