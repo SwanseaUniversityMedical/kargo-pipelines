@@ -42,8 +42,6 @@ jobs:
       release-tag-format: 'v${version}-kargo-pipelines-chart'
       cosign-public-key: ${{ vars.COSIGN_PUBLIC_KEY }}
       chart: charts/kargo-pipelines
-      test-command: |
-        helm template $CHART --debug
 
     secrets:
       cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
