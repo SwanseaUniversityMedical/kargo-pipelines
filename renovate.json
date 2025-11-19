@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    ":enableRenovate"
+  ],
+  "hostRules": [
+    {
+      "hostType": "docker",
+      "matchHost": "harbor.ukserp.ac.uk",
+      "username": "robot$kargo-pipelines",
+      "encrypted": {
+        "password": "wcFMA8VSrg/pGdrLAQ/+IWQgOwk9Me5UUu9HMcJ4q6UNiMQE5O4f9MFFIOArTuUS7T8ki/Yg4Grk26AaxFsW8UiM1vQ4YZwadkZEynIglJQwtlINrqRTqlCnIyhJzSvjj1zAX5iLPQ+8lGLPDIipSJh8jpEOcCnpwOSgunGAXMKQ2WzZcjY0qAiV2N+RzBQpVZt4mm79eE5PDaZHqqL33bHc3/gKH424lVutlq4l3cH/KnsFrwQFxkDjYYnTVJXMbzz4QmxxN3MkEoHvOiUjHUjndXRMMCrT4e1BfK98+kv8nwy30NkwwFeEBmDev9phjvt3Xa6tb3KoZJ6d3X5Dp5MfF7OTbMbaqUJqGTf0zOeovTXVo+4c3pwnmLaP4/US8U37yjfNMxwGBqIhOw5Czu5zUhFovxuLEUwJWdui+mSYpNO9KjiTk8o3DZBuPMFiUBCauwTCL0xM4XSeoGpbYA0a5/5N+3TUjXdBF/CnNS6m2qDR5aZK0/9IAK/NJdXCsKj2cfzr+s9XY2Vd27ZTb+OgfS390JKqH9AAGoN5w94iJvlY30D299UIE5nDfffYKXuyvvsgtNlz034dsSM6ihOHi8WSgPxz/ngBit0vx2ftflJjTCpURQAU1NCftYwckuzb8IkySGYU+Y/Jl2LKSahDg7UGyapGroXa16iMWM2Iv2IR3MtJ8KtSsghEnmvSjgFdUUlwoDRbNzIwOpapu7Cxzs1FAeZGDLmLbK/c4LX9ThidIlVEjj+8CRGBCZ7L/wCoYOazY9OkTqHgA+uibwDgIThpdkUD9YdJctZcdavwVqbr00cV29iYnWjyli5OP5hkVCYz9wnQ4QTWiPvsje3Ije2PsHAm0cQrgWN7SXFn6AeI24z/yght6erix98"
+      }
+    }
+  ]
+}
